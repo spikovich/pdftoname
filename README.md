@@ -20,6 +20,10 @@ Leverages [pdfminer](https://github.com/pdfminer/pdfminer.six) to extract text a
 
 *Why does it add -PR.pdf to the end of filenames? Since the cost is non-zero to rename files, pdfrename needs to keep track of files which have already been renamed to avoid renaming again. I wanted something simpler than having to store a db, using filesystem attributes, or storing additional metadata files. I settled on using this suffix (-PR for (P)DF (R)ename) as a marker for renamed files.*
 
+## Multi-language Support
+
+pdfrename now supports multiple languages! The script automatically detects the language of the extracted text and adjusts the prompt accordingly. This allows for accurate filename generation in various languages.
+
 ## Usage
 
 Set your OpenAI API key in the ENV variable:

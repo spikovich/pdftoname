@@ -9,8 +9,15 @@ import pdfminer.psparser
 import pdfminer.pdfparser
 import openai
 import backoff
+from langdetect import detect
 
 MODEL = "gpt-4o-mini"
+
+def detect_language(text):
+    try:
+        return detect(text)
+    except:
+        return "en"
 
 def main():
     parser = argparse.ArgumentParser(description='Automatically rename PDF files.')
@@ -32,14 +39,24 @@ def main():
         print(f"Error parsing {args.filename}. Is it a valid PDF file? Error:\n{e}")
         sys.exit(1)
 
+    # detect language of the extracted text
+    language = detect_language(text)
+
     # just filename from args.filename
     filename = os.path.basename(args.filename)
 
-    prompt = f"""Given the above text extracted from the first page of an academic pdf, I would like to generate a pdf filename for the paper with the format:
+    if language == "en":
+        prompt = f"""Given the above text extracted from the first page of an academic pdf, I would like to generate a pdf filename for the paper with the format:
 
-    {{Title with spaces between words}}-{{year}}.pdf. 
+        {{Title with spaces between words}}-{{year}}.pdf. 
 
-    The year can also be in the following filename: {filename}. If the filename looks like 2402.07401.pdf, this is a pdf from arXiv and the year is 2024. If it were 2302.07401.pdf, the year would be 2023. Prefer the year from the filename. If the year is not present in either the filename or the text, use 0000. Use spaces to separates words in {{title}}. rather than dashes (-) ('This is a title' is a valid title, 'This-is-a-title' isn't, neither is 'This_is_a_title'.). The title should not be all CAPS or all lowercase. Do not output code to extract the filename. The new filename should only valid POSIX filename characters and end with the pdf extension. Your output should be just the new filename."""
+        The year can also be in the following filename: {filename}. If the filename looks like 2402.07401.pdf, this is a pdf from arXiv and the year is 2024. If it were 2302.07401.pdf, the year would be 2023. Prefer the year from the filename. If the year is not present in either the filename or the text, use 0000. Use spaces to separates words in {{title}}. rather than dashes (-) ('This is a title' is a valid title, 'This-is-a-title' isn't, neither is 'This_is_a_title'.). The title should not be all CAPS or all lowercase. Do not output code to extract the filename. The new filename should only valid POSIX filename characters and end with the pdf extension. Your output should be just the new filename."""
+    else:
+        prompt = f"""Given the above text extracted from the first page of an academic pdf, I would like to generate a pdf filename for the paper with the format:
+
+        {{Title with spaces between words}}-{{year}}.pdf. 
+
+        The year can also be in the following filename: {filename}. If the filename looks like 2402.07401.pdf, this is a pdf from arXiv and the year is 2024. If it were 2302.07401.pdf, the year would be 2023. Prefer the year from the filename. If the year is not present in either the filename or the text, use 0000. Use spaces to separates words in {{title}}. rather than dashes (-) ('This is a title' is a valid title, 'This-is-a-title' isn't, neither is 'This_is_a_title'.). The title should not be all CAPS or all lowercase. Do not output code to extract the filename. The new filename should only valid POSIX filename characters and end with the pdf extension. Your output should be just the new filename. The text is in {language}, so please respond in {language}."""
 
     @backoff.on_exception(backoff.expo, openai.error.RateLimitError)
     def get_filename():
